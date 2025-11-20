@@ -1,4 +1,4 @@
-    pipeline {
+pipeline {
     // Defines the node where the pipeline will run
     agent any
 
@@ -15,17 +15,19 @@
 
         stage('Build Docker Image') {
             steps {
-                // The '.' tells Docker to look for the Dockerfile in the current directory (the workspace root)
+                // The '.' tells Docker to look for the Dockerfile in the current directory
                 bat "docker build -t ${DOCKER_IMAGE} ."
             }
         }
 
         stage('Stop Old Container if any') {
             steps {
-                // Stop and remove the old container if it exists.
-                // '|| true' ensures the pipeline doesn't fail if the container is not found.
-                bat "docker stop ${CONTAINER_NAME} || true"
-                bat "docker rm ${CONTAINER_NAME} || true"
+                // FIX: Use catchError to ensure the pipeline doesn't fail 
+                // if the container is not found (and thus docker stop/rm fail).
+                catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                    bat "docker stop ${CONTAINER_NAME}"
+                    bat "docker rm ${CONTAINER_NAME}"
+                }
             }
         }
 
